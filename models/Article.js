@@ -22,6 +22,12 @@ const ArticleSchema = new Schema({
     type: String,
     unique: true,
     required: "Article Body is Required"
+  },
+
+  saved: {
+    type: Boolean,
+    required: "saved is Required",
+    default: false
   }
 });
 

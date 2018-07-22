@@ -7,26 +7,81 @@ const Article = require("../models/Article");
 const router = express.Router();
 
 router.get("/", function(req, res) {
-  var respData = {
-    articles: [
-      {
-        header: "U.S. Releases Surveillance Records of Ex-Trump Aide",
-        url:
-          "https://www.nytimes.com/2018/07/21/us/politics/carter-page-fisa.html",
-        body:
-          "The release offered a rare glimpse of national security wiretap files and raised echoes of a fight in February over the Russia inquiry between Republicans and Democrats on the House Intelligence Committee."
-      }
-    ]
-  };
-  res.render("index", respData);
+  var aritclesData = { articles: [] };
+
+  Article.find({})
+    .then(function(dbArticle) {
+      console.log(dbArticle);
+      aritclesData.articles = dbArticle;
+      res.render("index", aritclesData);
+      // res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+  // res.render("index", respData);
   // res.render("index");
 });
 
 mongoose.connect("mongodb://localhost/articlesDB");
 
-router.get("/scrape", function(req, res) {
+router.get("/api/headlines/clear", function(req, res) {
+  Article.remove({}, function(err, response) {
+    if (err) {
+      console.log(
+        "error happened while removing all documents from collection"
+      );
+      res.send(err);
+    }
+    res.render("index", null);
+  });
+});
+
+router.get("/api/headlines", function(req, res) {
+  console.log(req.query.saved);
+
+  Article.find({ saved: req.query.saved })
+    .then(function(dbArticle) {
+      if (req.query.saved) {
+        res.render("saved", dbArticle);
+      } else {
+        res.render("index", dbArticle);
+      }
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.get("/saved", function(req, res) {
+  Article.find({ saved: true })
+    .then(function(dbArticle) {
+      console.log(dbArticle);
+      var aritclesData = { articles: dbArticle };
+
+      res.render("saved", aritclesData);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.get("/api/headlines/:id/save", function(req, res) {
+  console.log(req.params.id);
+  let id = req.params.id;
+  Article.findByIdAndUpdate(id, { saved: true })
+    .then(function(dbArticle) {
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.get("/api/headlines/scrape", function(req, res) {
   request("https://news.ycombinator.com/", function(error, response, html) {
     var $ = cheerio.load(html);
+    var aritclesData = { articles: [] };
     $(".title").each(function(i, element) {
       var title = $(element)
         .children("a")
@@ -38,24 +93,20 @@ router.get("/scrape", function(req, res) {
       if (title && link) {
         console.log("title " + title);
         console.log("link " + link);
-        Article.create(
-          {
-            header: title,
-            link: link,
-            body: title
-          },
-          function(err, small) {
-            if (err) {
-              // return handleError(err);
-              // res.send(err);
-              console.log("record create failed");
-            }
-            // saved!
+        let article = {
+          header: title,
+          link: link,
+          body: title
+        };
+        Article.create(article, function(err, small) {
+          if (err) {
+            console.log(i + " record create failed " + err, article);
           }
-        );
+          aritclesData.articles.push(article);
+        });
       }
     });
-    res.send("Scrape Complete");
+    res.render("index", aritclesData);
   });
 });
 
