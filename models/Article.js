@@ -29,6 +29,14 @@ const ArticleSchema = new Schema({
     required: "saved is Required",
     default: false
   }
+
+  // ,
+  // notes: [
+  //   {
+  //     type: Schema.Types.ObjectId,
+  //     ref: "Note"
+  //   }
+  // ]
 });
 
 const Article = mongoose.model("Article", ArticleSchema);

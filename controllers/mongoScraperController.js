@@ -3,6 +3,9 @@ const cheerio = require("cheerio");
 const request = require("request");
 const mongoose = require("mongoose");
 const Article = require("../models/Article");
+var db = require("../models");
+
+mongoose.connect("mongodb://localhost/articlesDB");
 
 const router = express.Router();
 
@@ -23,7 +26,52 @@ router.get("/", function(req, res) {
   // res.render("index");
 });
 
-mongoose.connect("mongodb://localhost/articlesDB");
+router.get("/api/notes/:id", function(req, res) {
+  let id = req.params.id;
+  db.Note.find({ _headlineId: id })
+    .then(function(dbNote) {
+      console.log(dbNote);
+      res.json(dbNote);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.post("/api/notes", function(req, res) {
+  db.Note.create(req.body)
+    .then(function(dbNote) {
+      console.log(dbNote);
+      res.json(dbNote);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.delete("/api/notes/:id", function(req, res) {
+  let id = req.params.id;
+  db.Note.remove({ _id: id })
+    .then(function(dbNote) {
+      console.log(dbNote);
+      res.json(dbNote);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
+
+router.delete("/api/headlines/:id", function(req, res) {
+  let id = req.params.id;
+  db.Article.remove({ _id: id })
+    .then(function(dbArticle) {
+      console.log(dbArticle);
+      res.json(dbArticle);
+    })
+    .catch(function(err) {
+      res.json(err);
+    });
+});
 
 router.get("/api/headlines/clear", function(req, res) {
   Article.remove({}, function(err, response) {
@@ -39,13 +87,15 @@ router.get("/api/headlines/clear", function(req, res) {
 
 router.get("/api/headlines", function(req, res) {
   console.log(req.query.saved);
+  var aritclesData = { articles: [] };
 
   Article.find({ saved: req.query.saved })
     .then(function(dbArticle) {
+      aritclesData.articles = dbArticle;
       if (req.query.saved) {
-        res.render("saved", dbArticle);
+        res.json(aritclesData);
       } else {
-        res.render("index", dbArticle);
+        res.json(aritclesData);
       }
     })
     .catch(function(err) {
@@ -71,9 +121,12 @@ router.get("/api/headlines/:id/save", function(req, res) {
   let id = req.params.id;
   Article.findByIdAndUpdate(id, { saved: true })
     .then(function(dbArticle) {
+      console.log("find and update successful");
       res.json(dbArticle);
     })
     .catch(function(err) {
+      console.log("find and update not successful");
+
       res.json(err);
     });
 });
@@ -106,7 +159,7 @@ router.get("/api/headlines/scrape", function(req, res) {
         });
       }
     });
-    res.render("index", aritclesData);
+    res.json(aritclesData);
   });
 });
 
