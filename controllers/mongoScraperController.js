@@ -5,7 +5,15 @@ const mongoose = require("mongoose");
 const Article = require("../models/Article");
 var db = require("../models");
 
-mongoose.connect("mongodb://localhost/articlesDB");
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/articlesDB";
+
+// Set mongoose to leverage built in JavaScript ES6 Promises
+// Connect to the Mongo DB
+mongoose.Promise = Promise;
+mongoose.connect(MONGODB_URI);
+
+// mongoose.connect("mongodb://localhost/articlesDB");
 
 const router = express.Router();
 
